@@ -31,10 +31,10 @@ export default function Landing(): React.JSX.Element {
                         </a>
                     )} */}
 
-                    <a className="c-btn" href="/notlanding">
+                    <a className="c-btn" href="/p/notlanding">
                         not landing
                     </a>
-                    <a className="c-btn" href="/secret/notlanding">
+                    <a className="c-btn" href="/p/secret/notlanding">
                         secret
                     </a>
                 </div>
