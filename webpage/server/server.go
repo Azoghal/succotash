@@ -29,12 +29,17 @@ func addRoutes(
 	logger zerolog.Logger,
 	getDbConn supabase.RestDBClientFactory,
 ) {
-	api := router.Group("/api/v1")
+
+	// pages := router.Group("/p", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
+
+	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
+
+	restApi := router.Group("/api/v1")
 	{
-		api.GET("/", apiHandler(config, logger))
+		restApi.GET("/", apiHandler(config, logger))
 	}
 
-	testGroup := api.Group("/test")
+	testGroup := restApi.Group("/test")
 	{
 		testGroup.GET("bob", testHandler(config, logger, getDbConn))
 	}
