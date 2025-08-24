@@ -1,0 +1,29 @@
+version: '3'
+
+includes:
+  webpage:
+    taskfile: ./webpage/Taskfile.yml
+    dir: ./webpage
+
+tasks:
+  default:
+    cmds:
+      - echo "Default task is no op"
+    silent: true
+
+  clean:
+    desc: clean all generated and built artefacts
+    cmds:
+      - task: webpage:clean
+
+  build:
+    desc: build all executables
+    cmds:
+      - task: webpage:build
+  
+  run:
+    desc: run all executables
+    deps:
+      - build
+    cmds:
+      - task: webpage:run
