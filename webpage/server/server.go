@@ -30,7 +30,6 @@ func addRoutes(
 	logger zerolog.Logger,
 	getDbConn supabase.RestDBClientFactory,
 ) {
-
 	// redirect anything at / to the landing page
 	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/p/landing") })
 
@@ -38,17 +37,14 @@ func addRoutes(
 
 	// pages are all served under /p prefix
 	webpages := router.Group("/p")
-	// webpages.GET("*filename", static.Serve("/", static.LocalFile("./webpage/dist", true)))
-
-	// any /p/ we serve the react page
 	webpages.GET("/*filepath", func(c *gin.Context) {
 		c.File("./webpage/dist/index.html")
 	})
 
-	// rpc endpoints
+	// RPC endpoints
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
 
-	// api endpoints
+	// API endpoints
 	restApi := router.Group("/api/v1")
 	{
 		restApi.GET("/", apiHandler(config, logger))
