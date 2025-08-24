@@ -1,0 +1,12 @@
+{
+    "counter.label": "Press Me!",
+    "counter_zero": "I'm so empty",
+    "counter_one": "I'm just right",
+    "counter_other": "I'm so full",
+    "button.label": "O",
+    "button.quickAction": "Quick Action",
+    "tool.card.desc": "This is a quick summary of what the tool will do, possibly accompanied by some relevant current status",
+    "tool.card.title": "Tool {{count}}",
+    "title.succotash": "Legendary. Succotash",
+    "login": "login"
+}

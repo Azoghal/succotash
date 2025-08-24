@@ -1,0 +1,7 @@
+html/
+src/sass
+src/gen
+dist/
+css/
+package.json
+package-lock.json
