@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"server/supabase"
 
 	"github.com/gin-gonic/gin"
@@ -29,14 +30,32 @@ func addRoutes(
 	logger zerolog.Logger,
 	getDbConn supabase.RestDBClientFactory,
 ) {
-	api := router.Group("/api/v1")
-	{
-		api.GET("/", apiHandler(config, logger))
-	}
 
-	testGroup := api.Group("/test")
+	// redirect anything at / to the landing page
+	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/p/landing") })
+
+	router.Static("assets", "./webpage/dist/assets")
+
+	// pages are all served under /p prefix
+	webpages := router.Group("/p")
+	// webpages.GET("*filename", static.Serve("/", static.LocalFile("./webpage/dist", true)))
+
+	// any /p/ we serve the react page
+	webpages.GET("/*filepath", func(c *gin.Context) {
+		c.File("./webpage/dist/index.html")
+	})
+
+	// rpc endpoints
+	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
+
+	// api endpoints
+	restApi := router.Group("/api/v1")
 	{
-		testGroup.GET("bob", testHandler(config, logger, getDbConn))
+		restApi.GET("/", apiHandler(config, logger))
+		testGroup := restApi.Group("/test")
+		{
+			testGroup.GET("bob", testHandler(config, logger, getDbConn))
+		}
 	}
 
 	// Add more routes here as needed

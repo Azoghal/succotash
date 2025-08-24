@@ -10,12 +10,20 @@ tasks:
     cmds:
       - mkdir -p build
       - go build -o build/server server/cmd/main.go 
+      - task: build-webpage
+  
+  build-webpage:
+    dir: frontend
+    cmds:
+      - npm run build
+      - npm run package
 
   run:
+    dir: build/
     deps:
       - build
     cmds:
-      - ./build/server
+      - ./server
 
   clean:
     cmds:

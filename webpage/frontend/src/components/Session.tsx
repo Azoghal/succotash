@@ -25,10 +25,10 @@ export default function Session(): React.JSX.Element {
     return (
         <SessionContext.Provider value={emptySession}>
             <Router.Routes>
-                <Router.Route path="/" Component={Landing} />
-                <Router.Route path="/notlanding" Component={TestNotLanding} />
+                <Router.Route path="/p/landing" Component={Landing} />
+                <Router.Route path="/p/notlanding" Component={TestNotLanding} />
                 <Router.Route Component={Protected} >
-                    <Router.Route path="/secret/notlanding" element={<TestNotLanding/>}/>
+                    <Router.Route path="/p/secret/notlanding" element={<TestNotLanding/>}/>
                 </Router.Route>
             </Router.Routes>
         </SessionContext.Provider>
