@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"server/supabase"
 
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
@@ -29,19 +30,17 @@ func addRoutes(
 	logger zerolog.Logger,
 	getDbConn supabase.RestDBClientFactory,
 ) {
-
-	// pages := router.Group("/p", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
+	router.Use(static.Serve("/", static.LocalFile("./webpage/dist", true)))
 
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
 
 	restApi := router.Group("/api/v1")
 	{
 		restApi.GET("/", apiHandler(config, logger))
-	}
-
-	testGroup := restApi.Group("/test")
-	{
-		testGroup.GET("bob", testHandler(config, logger, getDbConn))
+		testGroup := restApi.Group("/test")
+		{
+			testGroup.GET("bob", testHandler(config, logger, getDbConn))
+		}
 	}
 
 	// Add more routes here as needed
