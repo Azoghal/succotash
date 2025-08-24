@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"server/supabase"
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -19,8 +20,8 @@ import (
 )
 
 const (
-	apiKeyEnvVar = "SAM_API_KEY"
-	apiUrlEnvVar = "API_URL"
+	supabaseKeyEnvVar    = "SUPABASE_API_KEY"
+	supabaseApiUrlEnvVar = "SUPABASE_API_URL"
 )
 
 func run(
@@ -38,19 +39,19 @@ func run(
 	// Initialize zerolog logger
 	logger := zerolog.New(stderr).With().Timestamp().Logger()
 
-	apiKey := getenv(apiKeyEnvVar)
-	apiUrl := getenv(apiUrlEnvVar)
+	apiKey := getenv(supabaseKeyEnvVar)
+	apiUrl := getenv(supabaseApiUrlEnvVar)
 
 	config := server.ServerConfig{
 		ApiKey: apiKey,
 		ApiUrl: apiUrl,
 	}
 
-	dbGetter := func() error {
-		return nil
+	restDbGetter := func() supabase.RestDBClientFactory {
+		return supabase.NewRestDBClientFactory()
 	}
 
-	server := server.NewServer(config, logger, dbGetter)
+	server := server.NewServer(config, logger, restDbGetter())
 
 	addr := ":6789" // Define the server address
 	srv := &http.Server{

@@ -19,4 +19,8 @@ tasks:
 
   clean:
     cmds:
-     - rm -rf build/
+      - rm -rf build/
+
+  pgconnect:
+    cmds:
+      - psql postgresql://postgres:postgres@127.0.0.1:54322/postgres
