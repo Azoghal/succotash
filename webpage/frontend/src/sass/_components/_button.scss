@@ -1,0 +1,23 @@
+.c-btn {
+    border-radius: $border-radius-base;
+    border: $border-base;
+    border-color: $darkest-grey;
+    padding: $c-btn-padding;
+    margin: 1em;
+    color: $white;
+    font-size: $font-size;
+    font-weight: $font-weight-regular;
+    font-family: inherit;
+    background-color: $c-btn-bg;
+    cursor: pointer;
+    transition: $c-btn-trans;
+
+    &__alternate {
+        background-color: $submit-green;
+    }
+}
+
+.c-btn:hover {
+    border-color: $dark-pink;
+}
+

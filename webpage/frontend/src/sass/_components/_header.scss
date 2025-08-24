@@ -1,0 +1,23 @@
+.c-header {
+    align-items: center;
+    background-color: $dark-grey;
+    display: flex;
+    height: 100px;
+    // justify-content: center;
+    padding: 0 1.5rem 1em 0;
+    width:100%;
+    justify-content: space-between;
+}
+
+.c-header-right {
+    float: right;
+    justify-content: right;
+    margin-right: 1em;
+}
+
+.c-header-left {
+    justify-content: left;
+    margin-left: 1em;
+    display: flex;
+    align-items: center;
+}

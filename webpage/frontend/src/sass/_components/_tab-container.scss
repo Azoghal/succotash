@@ -1,0 +1,64 @@
+.tab-container {
+    // background-color: $grey;
+    // border-radius: $border-radius-base;
+    // border: $border-base;
+    // border-color: $darkest-grey;
+    // color: $white;
+    position: relative;
+    height: auto;
+    margin: 0;
+    padding: 1em;
+
+    &__tabs {
+        font-size: $font-size-h1;
+        font-weight: $font-weight-bold;
+        display: flex;
+        
+    }
+
+    &__body {
+        padding: 0;
+        height: 500px; // TODO fix this so that it's automatic
+    }
+}
+
+.tab {
+    background-color: $grey;
+    border-radius: $border-radius-base;
+    border: $border-base;
+    border-bottom: 0;
+    border-color: $darkest-grey;
+    
+    border-radius: 0;
+    border-top-right-radius: $border-radius-base;
+    border-top-left-radius: $border-radius-base;
+
+    padding: 0em 1em 0em 1em;
+
+    &__selected {
+        border-color: black;
+        background-color: $light-grey;
+    }
+
+    &:hover {
+        background-color: $light-grey;
+    }
+
+    
+}
+
+.tab-body {
+    background-color: $grey;
+    border-radius: $border-radius-base;
+    border: $border-base;
+    border-color: $darkest-grey;
+
+    border-radius: 0;
+    border-bottom-right-radius: $border-radius-base;
+    border-bottom-left-radius: $border-radius-base;
+    border-top-right-radius: $border-radius-base;
+
+    height: 100%;
+
+    padding: 1em;
+}

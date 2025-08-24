@@ -1,0 +1,12 @@
+.logo {
+    height: $logo-height;
+    padding: $logo-padding;
+    will-change: $logo-will-change;
+    transition: $logo-transition;
+}
+.logo:hover {
+    filter: drop-shadow(0 0 2em $main-pink);
+}
+.logo.react:hover {
+    filter: drop-shadow(0 0 2em $light-pink);
+}
