@@ -15,7 +15,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Session as SupabaseSession } from '@supabase/supabase-js'
 import LoginPage from "./Login";
 
-const supabase = createClient('https://ocdegtteilykjvohsxrl.supabase.co', 'KEY_HERE')
+const supabase = createClient('https://ocdegtteilykjvohsxrl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZGVndHRlaWx5a2p2b2hzeHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NDE2MjEsImV4cCI6MjA3MTQxNzYyMX0.quthDJ311-fbbIccEywNCAwLYRXZO8rwlthhi4hFuzw')
 
 export default function Session(): React.JSX.Element {
     const [supabaseSession, setSupabaseSession] = useState<SupabaseSession>();
