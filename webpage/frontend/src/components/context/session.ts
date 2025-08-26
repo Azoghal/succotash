@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export enum SessionType{
     NO_SESSION,
@@ -8,6 +9,7 @@ export enum SessionType{
 export type ISession = {
     sessionType: SessionType;
     name: string;
+    supabaseClient?: SupabaseClient;
 };
 
 export const emptySession: ISession = { sessionType: SessionType.NO_SESSION, name: "" };

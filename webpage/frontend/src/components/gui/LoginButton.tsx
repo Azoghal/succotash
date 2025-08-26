@@ -5,7 +5,7 @@ export default function LoginButton() {
 
     return (
         <>
-            <a href="/login" className="c-btn">
+            <a href="/p/login" className="c-btn">
                 {t("login")}
             </a>
         </>
