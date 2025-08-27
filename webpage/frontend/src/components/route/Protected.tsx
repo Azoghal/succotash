@@ -1,9 +1,8 @@
-import React, { PropsWithChildren } from "react";
+import React from "react";
 import { SessionType, useSession } from "../context/session";
+import { Outlet } from "react-router-dom";
 
-export default function Protected(
-    props: PropsWithChildren<object>
-): React.JSX.Element {
+export default function Protected(): React.JSX.Element {
     const session = useSession();
 
     if (session.sessionType == SessionType.NO_SESSION){
@@ -11,6 +10,6 @@ export default function Protected(
     }
 
     return (
-        <>{props.children}</>
+        <Outlet />
     );
 }
