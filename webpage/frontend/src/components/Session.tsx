@@ -10,18 +10,16 @@ import {
 } from "./context/session";
 import Protected from "./route/Protected";
 
-
-import { createClient } from '@supabase/supabase-js'
 import { Session as SupabaseSession } from '@supabase/supabase-js'
 import LoginPage from "./Login";
 
-const supabase = createClient('https://ocdegtteilykjvohsxrl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jZGVndHRlaWx5a2p2b2hzeHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NDE2MjEsImV4cCI6MjA3MTQxNzYyMX0.quthDJ311-fbbIccEywNCAwLYRXZO8rwlthhi4hFuzw')
+import { supabaseClient } from "../main";
 
 export default function Session(): React.JSX.Element {
     const [supabaseSession, setSupabaseSession] = useState<SupabaseSession>();
 
     useEffect(() => {
-        supabase.auth.getSession().
+        supabaseClient.auth.getSession().
             then(({ data: { session }, error }) => {
                 console.log("got session. error?: ", error)
                 if (session != null){
@@ -32,7 +30,7 @@ export default function Session(): React.JSX.Element {
         
         const {
             data: { subscription },      
-        } = supabase.auth.onAuthStateChange((event, session) => {
+        } = supabaseClient.auth.onAuthStateChange((event, session) => {
             console.log("auth state change, event: ", event)
             if (session != null){
                 console.log("session b:",session)
@@ -47,14 +45,14 @@ export default function Session(): React.JSX.Element {
         if (!supabaseSession){
             return {
                 ...emptySession,
-                supabaseClient: supabase
+                supabaseClient: supabaseClient
             }
         }
 
         return {
             sessionType: SessionType.USER,
             name: supabaseSession.user.email ?? "Unkown user email",
-            supabaseClient: supabase,
+            supabaseClient: supabaseClient,
         }
     }, [supabaseSession])
 

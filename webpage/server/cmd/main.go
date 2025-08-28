@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	supabaseKeyEnvVar    = "SUPABASE_API_KEY"
+	supabaseKeyEnvVar    = "TEMP_SUPABASE_API_KEY"
 	supabaseApiUrlEnvVar = "SUPABASE_API_URL"
 )
 
@@ -34,7 +34,10 @@ func run(
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 
 	// Initialize zerolog logger
 	logger := zerolog.New(stderr).With().Timestamp().Logger()
@@ -69,7 +72,7 @@ func run(
 		logger.Info().Msgf("Starting server on %s", addr)
 		return utils.RunServer(egCtx, srv)
 	})
-	err := eg.Wait()
+	err = eg.Wait()
 	if err != nil {
 		log.Err(err).Msg("Error during operation")
 	}
