@@ -22,6 +22,7 @@ import (
 const (
 	supabaseKeyEnvVar    = "SUPABASE_API_KEY"
 	supabaseApiUrlEnvVar = "SUPABASE_API_URL"
+	dbUrlEnvVar          = "DATABASE_URL"
 )
 
 func run(
@@ -44,17 +45,18 @@ func run(
 
 	apiKey := getenv(supabaseKeyEnvVar)
 	apiUrl := getenv(supabaseApiUrlEnvVar)
+	dbUrl := getenv(dbUrlEnvVar)
 
 	config := server.ServerConfig{
 		ApiKey: apiKey,
 		ApiUrl: apiUrl,
 	}
 
-	restDbGetter := func() supabase.RestDBClientFactory {
-		return supabase.NewRestDBClientFactory()
-	}
+	restDbGetter := supabase.NewRestDBClientFactory(config.ApiUrl, config.ApiKey)
 
-	server := server.NewServer(config, logger, restDbGetter())
+	pgDbGetter := supabase.NewPGClientFactory(dbUrl)
+
+	server := server.NewServer(config, logger, restDbGetter, pgDbGetter)
 
 	addr := ":6789" // Define the server address
 	srv := &http.Server{
@@ -84,8 +86,16 @@ func run(
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Args, os.Getenv, os.Stdin, os.Stdout, os.Stderr); err != nil {
+	if err := run(ctx, os.Args, PanickingGetErr, os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
+}
+
+func PanickingGetErr(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		panic(fmt.Sprintf("env %s not found", key))
+	}
+	return val
 }

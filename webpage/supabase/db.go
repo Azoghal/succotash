@@ -1,10 +1,14 @@
 package supabase
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 	"github.com/supabase-community/supabase-go"
 )
 
@@ -41,10 +45,10 @@ func (c *postgrestClient) GetTestEvents() ([]TestEvent, error) {
 	return events, nil
 }
 
-type RestDBClientFactory func(url, key string) Client
+type DBClientFactory func() Client
 
-func NewRestDBClientFactory() RestDBClientFactory {
-	return func(url, key string) Client {
+func NewRestDBClientFactory(url, key string) DBClientFactory {
+	return func() Client {
 
 		fmt.Printf("%s: %s\n", url, key)
 
@@ -60,6 +64,13 @@ func NewRestDBClientFactory() RestDBClientFactory {
 }
 
 type pgClient struct {
+	url string
+}
+
+func NewPGClientFactory(dbUrl string) DBClientFactory {
+	return func() Client {
+		return &pgClient{url: dbUrl}
+	}
 }
 
 var _ Client = (*pgClient)(nil)
@@ -67,6 +78,39 @@ var _ Client = (*pgClient)(nil)
 func (c *pgClient) NoOp() {}
 
 func (c *pgClient) GetTestEvents() ([]TestEvent, error) {
+	conn, err := pgx.Connect(context.Background(), c.url)
+	if err != nil {
+		log.Err(err).Msgf("Failed to connect to the database: %v", err)
+		return nil, err
+	}
+	defer conn.Close(context.Background())
 
-	return nil, fmt.Errorf("not implemented")
+	// Example query to test connection
+	var events []TestEvent
+	rows, err := conn.Query(context.Background(), "SELECT * from test_events")
+	if err != nil {
+		log.Err(err).Msgf("Query failed: %v", err)
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id int
+		var content string
+		var createdAt time.Time
+		err := rows.Scan(&id, &createdAt, &content)
+		if err != nil {
+			log.Err(err).Msgf("Query failed: %v", err)
+
+			return nil, err
+		}
+		events = append(events, TestEvent{Id: id, Content: content})
+	}
+	if err = rows.Err(); err != nil {
+		log.Err(err).Msgf("Query failed: %v", err)
+		return nil, err
+	}
+
+	log.Info().Msgf("got events: %v", events)
+
+	return events, nil
 }

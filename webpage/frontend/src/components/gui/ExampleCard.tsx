@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 interface IExampleCardProps {
     title: string;
+    bobOrBill: string; // TODO sort out
 }
 
 export default function ExampleCard(props: IExampleCardProps): JSX.Element {
@@ -11,16 +12,16 @@ export default function ExampleCard(props: IExampleCardProps): JSX.Element {
     const fetchData = useCallback(async () => {
     
         try {
-            const response = await fetch('http://localhost:6789/api/v1/test/bob');
+            const response = await fetch(`http://localhost:6789/api/v1/test/${props.bobOrBill}`, {credentials: "include"});
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const fetchedData = await response.json();
-            console.log("bob:",fetchedData)
+            console.log(props.bobOrBill,fetchedData)
         } catch (e) {
             console.error("Failed to fetch data:", e);
         }
-    },[]);   
+    },[props]);   
 
     const getArtistPopularity = useCallback(() => {
         fetchData();

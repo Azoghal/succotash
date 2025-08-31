@@ -24,6 +24,7 @@ export default function Session(): React.JSX.Element {
                 console.log("got session. error?: ", error)
                 if (session != null){
                     console.log("session a:",session)
+                    document.cookie = `supasession=${session.access_token}; path=/; SameSite=Lax; expires=session`;
                     setSupabaseSession(session)
                 }
             })      
@@ -34,6 +35,7 @@ export default function Session(): React.JSX.Element {
             console.log("auth state change, event: ", event)
             if (session != null){
                 console.log("session b:",session)
+                document.cookie = `supasession=${session.access_token}; path=/; SameSite=Lax; expires=session`;
                 setSupabaseSession(session)
             }
         }) 
@@ -43,11 +45,14 @@ export default function Session(): React.JSX.Element {
 
     const session: ISession = useMemo(()=>{
         if (!supabaseSession){
+            console.log("has not supabase session")
             return {
                 ...emptySession,
                 supabaseClient: supabaseClient
             }
         }
+
+        console.log("has supabase session")
 
         return {
             sessionType: SessionType.USER,

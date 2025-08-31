@@ -16,11 +16,11 @@ type ServerConfig struct {
 	ApiUrl string
 }
 
-func NewServer(config ServerConfig, logger zerolog.Logger, getDbClient supabase.RestDBClientFactory) *gin.Engine {
+func NewServer(config ServerConfig, logger zerolog.Logger, getRestDbClient supabase.DBClientFactory, getPgDbClient supabase.DBClientFactory) *gin.Engine {
 	router := gin.New()                       // Create a new Gin router without default middleware
 	router.Use(gin.Recovery())                // Add default recovery middleware
 	router.Use(log.ZerologMiddleware(logger)) // Add custom zerolog logging middleware
-	addRoutes(router, config, logger, getDbClient)
+	addRoutes(router, config, logger, getRestDbClient, getPgDbClient)
 	return router
 }
 
@@ -28,7 +28,8 @@ func addRoutes(
 	router *gin.Engine,
 	config ServerConfig,
 	logger zerolog.Logger,
-	getDbConn supabase.RestDBClientFactory,
+	getRestDbClient supabase.DBClientFactory,
+	getPgClient supabase.DBClientFactory,
 ) {
 	// redirect anything at / to the landing page
 	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/p/landing") })
@@ -45,12 +46,13 @@ func addRoutes(
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
 
 	// API endpoints
-	restApi := router.Group("/api/v1")
+	restApi := router.Group("/api/v1", debugMiddleware(logger))
 	{
 		restApi.GET("/", apiHandler(config, logger))
 		testGroup := restApi.Group("/test")
 		{
-			testGroup.GET("bob", testHandler(config, logger, getDbConn))
+			testGroup.GET("bob", testHandler(config, logger, getRestDbClient))
+			testGroup.GET("bill", testHandler(config, logger, getPgClient))
 		}
 	}
 
@@ -69,9 +71,9 @@ func apiHandler(config ServerConfig, logger zerolog.Logger) func(c *gin.Context)
 	}
 }
 
-func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supabase.RestDBClientFactory) func(c *gin.Context) {
+func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supabase.DBClientFactory) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		client := dbClientGetter(config.ApiUrl, config.ApiKey)
+		client := dbClientGetter()
 		events, err := client.GetTestEvents()
 		if err != nil {
 			c.JSON(500, fmt.Sprintf("Failed to get events: %v", err))
@@ -86,5 +88,13 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 		for _, v := range events {
 			logger.Info().Str("content", v.Content).Msg("an event")
 		}
+	}
+}
+
+func debugMiddleware(logger zerolog.Logger) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		cookies := c.Request.CookiesNamed("supasession")
+		leCookie := cookies[0].String()
+		logger.Info().Str("supabasesession", leCookie).Send()
 	}
 }
