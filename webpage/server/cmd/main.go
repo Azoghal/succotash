@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	supabaseKeyEnvVar    = "TEMP_SUPABASE_API_KEY"
+	supabaseKeyEnvVar    = "SUPABASE_API_KEY"
 	supabaseApiUrlEnvVar = "SUPABASE_API_URL"
 )
 

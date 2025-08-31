@@ -16,14 +16,14 @@ type Client interface {
 	GetTestEvents() ([]TestEvent, error)
 }
 
-type client struct {
+type postgrestClient struct {
 	supabaseClient *supabase.Client
 }
 
-func (c *client) NoOp() {
+func (c *postgrestClient) NoOp() {
 }
 
-func (c *client) GetTestEvents() ([]TestEvent, error) {
+func (c *postgrestClient) GetTestEvents() ([]TestEvent, error) {
 	data, _, err := c.supabaseClient.From("test_events").Select("*", "", false).Execute()
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed to select testEvents"))
@@ -52,9 +52,21 @@ func NewRestDBClientFactory() RestDBClientFactory {
 		if err != nil {
 			fmt.Println("cannot initalize client", err)
 		}
-		return &client{
+		return &postgrestClient{
 			supabaseClient: c,
 		}
 	}
 
+}
+
+type pgClient struct {
+}
+
+var _ Client = (*pgClient)(nil)
+
+func (c *pgClient) NoOp() {}
+
+func (c *pgClient) GetTestEvents() ([]TestEvent, error) {
+
+	return nil, fmt.Errorf("not implemented")
 }

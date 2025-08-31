@@ -77,6 +77,12 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 			c.JSON(500, fmt.Sprintf("Failed to get events: %v", err))
 		}
 
+		if len(events) > 0 {
+			c.JSON(http.StatusOK, gin.H{"content": events[0].Content})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"content": "nothing"})
+		}
+
 		for _, v := range events {
 			logger.Info().Str("content", v.Content).Msg("an event")
 		}

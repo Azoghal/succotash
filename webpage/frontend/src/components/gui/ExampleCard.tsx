@@ -8,13 +8,25 @@ export default function ExampleCard(props: IExampleCardProps): JSX.Element {
     const [popularity, setPopularity] = useState<number>(-1);
     const [artist, setArtist] = useState("");
 
+    const fetchData = useCallback(async () => {
+    
+        try {
+            const response = await fetch('http://localhost:6789/api/v1/test/bob');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const fetchedData = await response.json();
+            console.log("bob:",fetchedData)
+        } catch (e) {
+            console.error("Failed to fetch data:", e);
+        }
+    },[]);   
+
     const getArtistPopularity = useCallback(() => {
-        console.log(
-            `Lets go ask the backend for the popularity of the band: ${artist}`
-        );
+        fetchData();
 
         setPopularity(20);
-    }, [artist]);
+    }, [fetchData]);
 
     return (
         <div className="card">
