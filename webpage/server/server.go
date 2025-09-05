@@ -1,11 +1,14 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"server/supabase"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lestrrat-go/jwx/v3/jwk"
+	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/rs/zerolog"
 
 	"github.com/azoghal/succotash/webpage/log"
@@ -93,8 +96,34 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 
 func debugMiddleware(logger zerolog.Logger) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		cookies := c.Request.CookiesNamed("supasession")
-		leCookie := cookies[0].String()
-		logger.Info().Str("supabasesession", leCookie).Send()
+		cookie, err := c.Request.Cookie("supasession")
+		if err != nil {
+			logger.Err(err).Msg("failed to get cookie")
+			return
+		}
+		tokenString := cookie.Value
+		logger.Info().Str("supabasesession token", tokenString).Send()
+
+		keyLocation := "https://ocdegtteilykjvohsxrl.supabase.co/auth/v1/.well-known/jwks.json"
+		keySet, err := jwk.Fetch(context.Background(), keyLocation)
+		if err != nil {
+			logger.Err(err).Msg("failed to get key set")
+			return
+		}
+
+		parsedVerified, err := jwt.Parse([]byte(tokenString), jwt.WithVerify(true), jwt.WithKeySet(keySet), jwt.WithValidate(true))
+		if err != nil {
+			fmt.Printf("failed to parse JWT: %s\n", err)
+			return
+		}
+
+		var email string
+		err = parsedVerified.Get("email", &email)
+		if err != nil {
+			logger.Err(err).Msg("failed to get email claim")
+			return
+		}
+
+		logger.Info().Str("email", email).Msg("woohoo")
 	}
 }
