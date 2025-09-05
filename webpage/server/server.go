@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"server/supabase"
@@ -48,8 +49,8 @@ func addRoutes(
 	// RPC endpoints
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
 
-	// API endpoints
-	restApi := router.Group("/api/v1", debugMiddleware(logger))
+	// API endpoints - now all authed.
+	restApi := router.Group("/api/v1", authMiddleware(logger, getPgClient))
 	{
 		restApi.GET("/", apiHandler(config, logger))
 		testGroup := restApi.Group("/test")
@@ -94,7 +95,9 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 	}
 }
 
-func debugMiddleware(logger zerolog.Logger) func(c *gin.Context) {
+// For clarity right now, we do it all every time
+// probably we should lazily update the keyset if we ever look for a key that doesn't exist
+func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFactory) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		cookie, err := c.Request.Cookie("supasession")
 		if err != nil {
@@ -124,6 +127,28 @@ func debugMiddleware(logger zerolog.Logger) func(c *gin.Context) {
 			return
 		}
 
+		var sessionId string
+		err = parsedVerified.Get("session_id", &sessionId)
+		if err != nil {
+			logger.Err(err).Msg("failed to get sessionId claim")
+			return
+		}
+
 		logger.Info().Str("email", email).Msg("woohoo")
+
+		// Now look up the session id and make sure it's real
+		ok, err := dbClientGetter().CheckSession(sessionId)
+		if err != nil {
+			logger.Err(err).Msg("failed to check session")
+			return
+		}
+
+		if !ok {
+			c.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
+			return
+		}
+
+		// can set some key on the context if we fancied
+		logger.Info().Bool("session exists", ok).Msg("woohooo 2")
 	}
 }

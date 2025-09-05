@@ -18,6 +18,7 @@ import (
 type Client interface {
 	NoOp()
 	GetTestEvents() ([]TestEvent, error)
+	CheckSession(string) (bool, error)
 }
 
 type postgrestClient struct {
@@ -45,6 +46,10 @@ func (c *postgrestClient) GetTestEvents() ([]TestEvent, error) {
 	return events, nil
 }
 
+func (c *postgrestClient) CheckSession(_ string) (bool, error) {
+	return false, errors.New("unimplemented")
+}
+
 type DBClientFactory func() Client
 
 func NewRestDBClientFactory(url, key string) DBClientFactory {
@@ -60,7 +65,6 @@ func NewRestDBClientFactory(url, key string) DBClientFactory {
 			supabaseClient: c,
 		}
 	}
-
 }
 
 type pgClient struct {
@@ -113,4 +117,26 @@ func (c *pgClient) GetTestEvents() ([]TestEvent, error) {
 	log.Info().Msgf("got events: %v", events)
 
 	return events, nil
+}
+
+func (c *pgClient) CheckSession(sessionId string) (bool, error) {
+	conn, err := pgx.Connect(context.Background(), c.url)
+	if err != nil {
+		log.Err(err).Msgf("Failed to connect to the database: %v", err)
+		return false, err
+	}
+	defer conn.Close(context.Background())
+
+	var id, userId string
+	err = conn.QueryRow(context.Background(), "select id, user_id from auth.sessions where id=$1", sessionId).Scan(&id, &userId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Just means not a real session
+			return false, nil
+		}
+		log.Err(err).Msgf("error querying user session", err)
+		return false, err
+	}
+
+	return true, nil
 }
