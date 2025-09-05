@@ -102,6 +102,7 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		cookie, err := c.Request.Cookie("supasession")
 		if err != nil {
 			logger.Err(err).Msg("failed to get cookie")
+			abortUnauthorised(c)
 			return
 		}
 		tokenString := cookie.Value
@@ -111,12 +112,14 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		keySet, err := jwk.Fetch(context.Background(), keyLocation)
 		if err != nil {
 			logger.Err(err).Msg("failed to get key set")
+			abortInternal(c)
 			return
 		}
 
 		parsedVerified, err := jwt.Parse([]byte(tokenString), jwt.WithVerify(true), jwt.WithKeySet(keySet), jwt.WithValidate(true))
 		if err != nil {
 			fmt.Printf("failed to parse JWT: %s\n", err)
+			abortUnauthorised(c)
 			return
 		}
 
@@ -124,6 +127,7 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		err = parsedVerified.Get("email", &email)
 		if err != nil {
 			logger.Err(err).Msg("failed to get email claim")
+			abortInternal(c)
 			return
 		}
 
@@ -131,6 +135,7 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		err = parsedVerified.Get("session_id", &sessionId)
 		if err != nil {
 			logger.Err(err).Msg("failed to get sessionId claim")
+			abortInternal(c)
 			return
 		}
 
@@ -140,15 +145,25 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		ok, err := dbClientGetter().CheckSession(sessionId)
 		if err != nil {
 			logger.Err(err).Msg("failed to check session")
+			abortInternal(c)
 			return
 		}
 
 		if !ok {
-			c.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
+			logger.Info().Msg("user not logged in")
+			abortUnauthorised(c)
 			return
 		}
 
 		// can set some key on the context if we fancied
 		logger.Info().Bool("session exists", ok).Msg("woohooo 2")
 	}
+}
+
+func abortUnauthorised(c *gin.Context) {
+	c.AbortWithError(http.StatusUnauthorized, errors.New("unauthorized"))
+}
+
+func abortInternal(c *gin.Context) {
+	c.AbortWithError(http.StatusInternalServerError, errors.New("unexpected error"))
 }
