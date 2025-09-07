@@ -12,7 +12,7 @@ export default function ExampleCard(props: IExampleCardProps): JSX.Element {
     const fetchData = useCallback(async () => {
     
         try {
-            const response = await fetch(`http://localhost:6789/api/v1/test/${props.bobOrBill}`, {credentials: "include"});
+            const response = await fetch(`http://localhost:6789/api/v1/authed/test/${props.bobOrBill}`, {credentials: "include"});
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

@@ -15,6 +15,8 @@ import (
 	"github.com/azoghal/succotash/webpage/log"
 )
 
+const actorDisplayNameKey = "actor-display-id"
+
 type ServerConfig struct {
 	ApiKey string
 	ApiUrl string
@@ -49,29 +51,47 @@ func addRoutes(
 	// RPC endpoints
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
 
-	// API endpoints - now all authed.
-	restApi := router.Group("/api/v1", authMiddleware(logger, getPgClient))
+	// API endpoints
+	restApi := router.Group("/api/v1/")
 	{
-		restApi.GET("/", apiHandler(config, logger))
-		testGroup := restApi.Group("/test")
+		unauthedRestApi := restApi.Group("/unauthed")
 		{
-			testGroup.GET("bob", testHandler(config, logger, getRestDbClient))
-			testGroup.GET("bill", testHandler(config, logger, getPgClient))
+			unauthedRestApi.GET("/test", helloWorldHandler(config, logger))
+		}
+		authedRestApi := restApi.Group("/authed", authMiddleware(logger, getPgClient))
+		{
+			authedRestApi.GET("/", helloUserHandler(config, logger))
+			testGroup := authedRestApi.Group("/test")
+			{
+				testGroup.GET("alice", helloUserHandler(config, logger))
+				testGroup.GET("bob", testHandler(config, logger, getRestDbClient))
+				testGroup.GET("bill", testHandler(config, logger, getPgClient))
+			}
 		}
 	}
 
-	// Add more routes here as needed
 	router.NoRoute(func(c *gin.Context) {
 		logger.Warn().Msg("404 Not Found")
 		c.JSON(404, gin.H{"error": "Not Found"})
 	})
 }
 
-func apiHandler(config ServerConfig, logger zerolog.Logger) func(c *gin.Context) {
+func helloWorldHandler(config ServerConfig, logger zerolog.Logger) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		logger.Info().Msg("apiHandler called")
-		logger.Warn().Msg("404 Not Found")
-		c.JSON(404, gin.H{"error": "API endpoint not Found"})
+		logger.Info().Msg("helloWorldHandler called")
+		c.JSON(200, gin.H{"message": "Hello World"})
+	}
+}
+
+func helloUserHandler(config ServerConfig, logger zerolog.Logger) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		logger.Info().Msg("helloUserHandler called")
+		name, ok := c.Get(actorDisplayNameKey)
+		if !ok {
+			c.JSON(500, gin.H{"error": "failed to get user name"})
+			return
+		}
+		c.JSON(200, gin.H{"message": fmt.Sprintf("Hello %s", name)})
 	}
 }
 
@@ -93,6 +113,19 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 			logger.Info().Str("content", v.Content).Msg("an event")
 		}
 	}
+}
+
+type UserMetadata struct {
+	AvatarUrl     string `json:"avatar_url"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	FullName      string `json:"full_name"`
+	Iss           string `json:"iss"`
+	Name          string `json:"name"`
+	PhoneVerified bool   `json:"phone_verified"`
+	Picture       string `json:"picture"`
+	ProviderId    string `json:"provider_id"`
+	Sub           string `json:"sub"`
 }
 
 // For clarity right now, we do it all every time
@@ -131,6 +164,29 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 			return
 		}
 
+		var userMetadata map[string]interface{}
+		err = parsedVerified.Get("user_metadata", &userMetadata)
+		if err != nil {
+			logger.Err(err).Msg("failed to get user metadata claim")
+			abortInternal(c)
+			return
+		}
+
+		userNameA, ok := userMetadata["name"]
+		if !ok {
+			logger.Error().Msg("failed to get name")
+			abortInternal(c)
+			return
+		}
+		userName, ok := userNameA.(string)
+		if !ok {
+			logger.Error().Msg("failed to cast name")
+			abortInternal(c)
+			return
+		}
+
+		logger.Info().Str("user name", userName).Msg("got the user metadata properly!")
+
 		var sessionId string
 		err = parsedVerified.Get("session_id", &sessionId)
 		if err != nil {
@@ -142,7 +198,7 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		logger.Info().Str("email", email).Msg("woohoo")
 
 		// Now look up the session id and make sure it's real
-		ok, err := dbClientGetter().CheckSession(sessionId)
+		ok, err = dbClientGetter().CheckSession(sessionId)
 		if err != nil {
 			logger.Err(err).Msg("failed to check session")
 			abortInternal(c)
@@ -156,6 +212,7 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		}
 
 		// can set some key on the context if we fancied
+		c.Set(actorDisplayNameKey, userName)
 		logger.Info().Bool("session exists", ok).Msg("woohooo 2")
 	}
 }

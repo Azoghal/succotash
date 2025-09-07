@@ -45,10 +45,16 @@ export default function Landing(): React.JSX.Element {
                             bobOrBill="bob"
                         />
                     </div>
-                    <div className="column is-3" key={1}>
+                    <div className="column is-3" key={2}>
                         <ExampleCard
                             title={t("tool.card.title", { count: 2 })}
                             bobOrBill="bill"
+                        />
+                    </div>
+                    <div className="column is-3" key={3}>
+                        <ExampleCard
+                            title={t("tool.card.title", { count: 3 })}
+                            bobOrBill="alice"
                         />
                     </div>
                 </div>
