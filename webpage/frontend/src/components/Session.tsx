@@ -14,6 +14,7 @@ import { Session as SupabaseSession } from '@supabase/supabase-js'
 import LoginPage from "./Login";
 
 import { supabaseClient } from "../main";
+import LogoutPage from "./Logout";
 
 export default function Session(): React.JSX.Element {
     const [supabaseSession, setSupabaseSession] = useState<SupabaseSession>();
@@ -65,6 +66,7 @@ export default function Session(): React.JSX.Element {
         <SessionContext.Provider value={session}>
             <Router.Routes>
                 <Router.Route path="/p/login" element={<LoginPage/>} />
+                <Router.Route path="/p/logout" element={<LogoutPage/>} />
                 <Router.Route path="/p/landing" element={<Landing/>} />
                 <Router.Route path="/p/notlanding" element={<TestNotLanding/>} />
                 <Router.Route element={<Protected/>} >
