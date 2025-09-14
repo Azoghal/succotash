@@ -1,33 +1,22 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface IExampleCardProps {
     title: string;
-    bobOrBill: string; // TODO sort out
+    actionDescription: string;
+    state: string;
+    onActionClick: (input: string)=>void 
 }
 
 export default function ExampleCard(props: IExampleCardProps): JSX.Element {
-    const [popularity, setPopularity] = useState<number>(-1);
-    const [artist, setArtist] = useState("");
-
-    const fetchData = useCallback(async () => {
+    const {t} = useTranslation();
+    const {onActionClick, state} = props
     
-        try {
-            const response = await fetch(`http://localhost:6789/api/v1/authed/test/${props.bobOrBill}`, {credentials: "include"});
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const fetchedData = await response.json();
-            console.log(props.bobOrBill,fetchedData)
-        } catch (e) {
-            console.error("Failed to fetch data:", e);
-        }
-    },[props]);   
+    const [exampleInput, setExampleInput] = useState("");
 
-    const getArtistPopularity = useCallback(() => {
-        fetchData();
-
-        setPopularity(20);
-    }, [fetchData]);
+    const doAction = useCallback(async () => {
+        onActionClick(exampleInput)
+    },[onActionClick, exampleInput]); 
 
     return (
         <div className="card">
@@ -36,19 +25,19 @@ export default function ExampleCard(props: IExampleCardProps): JSX.Element {
                 <div>
                     <input
                         type="text"
-                        onChange={(e) => setArtist(e.target.value)}
-                        value={artist}
+                        onChange={(e) => setExampleInput(e.target.value)}
+                        value={exampleInput}
                     />
-                    {artist}
+                    {exampleInput}
                 </div>
-                <div>Popularity: {popularity == -1 ? "..." : popularity}</div>
+                <div>{t("tool.card.example.state", {value: state != "" ? state : "..."})}</div>
             </div>
             <div className="card__quick-action">
                 <button
                     className="c-btn c-btn__alternate"
-                    onClick={getArtistPopularity}
+                    onClick={doAction}
                 >
-                    Get Artist Popularity
+                    {props.actionDescription}
                 </button>
             </div>
         </div>

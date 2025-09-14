@@ -67,7 +67,7 @@ export default function Session(): React.JSX.Element {
             <Router.Routes>
                 <Router.Route path="/p/login" element={<LoginPage/>} />
                 <Router.Route path="/p/logout" element={<LogoutPage/>} />
-                <Router.Route path="/p/landing" element={<Landing/>} />
+                <Router.Route path="/p/landing" element={<Landing apiBaseUrl="http://localhost:6789/api/v1"/>} />
                 <Router.Route path="/p/notlanding" element={<TestNotLanding/>} />
                 <Router.Route element={<Protected/>} >
                     <Router.Route path="/p/secret/notlanding" element={<TestNotLanding/>}/>
