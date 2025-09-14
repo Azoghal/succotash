@@ -3,11 +3,9 @@ import { SessionType, useSession } from "../context/session";
 import { useMemo } from "react";
 import LoginButton from "./LoginButton";
 import LogoutButton from "./LogoutButton";
+import SessionHealth from "./SessionHealth";
 
-interface ILogInOutHeaderProps {
-
-}
-
+interface ILogInOutHeaderProps {}
 
 export default function LogInOutHeader(props: React.PropsWithChildren<ILogInOutHeaderProps>): JSX.Element{
     const session = useSession()
@@ -16,12 +14,11 @@ export default function LogInOutHeader(props: React.PropsWithChildren<ILogInOutH
         return session.sessionType == SessionType.USER
     },[session.sessionType])
 
-
-    
     return (
         <Header>
             {props.children && props.children}
             {loggedIn ? <LogoutButton/> : <LoginButton/>}
+            <SessionHealth />
         </Header>
     )
 }
