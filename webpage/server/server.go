@@ -22,11 +22,11 @@ type ServerConfig struct {
 	ApiUrl string
 }
 
-func NewServer(config ServerConfig, logger zerolog.Logger, getRestDbClient supabase.DBClientFactory, getPgDbClient supabase.DBClientFactory) *gin.Engine {
+func NewServer(config ServerConfig, logger zerolog.Logger, getPgDbClient supabase.DBClientFactory) *gin.Engine {
 	router := gin.New()                       // Create a new Gin router without default middleware
 	router.Use(gin.Recovery())                // Add default recovery middleware
 	router.Use(log.ZerologMiddleware(logger)) // Add custom zerolog logging middleware
-	addRoutes(router, config, logger, getRestDbClient, getPgDbClient)
+	addRoutes(router, config, logger, getPgDbClient)
 	return router
 }
 
@@ -34,7 +34,6 @@ func addRoutes(
 	router *gin.Engine,
 	config ServerConfig,
 	logger zerolog.Logger,
-	getRestDbClient supabase.DBClientFactory,
 	getPgClient supabase.DBClientFactory,
 ) {
 	// redirect anything at / to the landing page
@@ -64,8 +63,7 @@ func addRoutes(
 			testGroup := authedRestApi.Group("/test")
 			{
 				testGroup.GET("alice", helloUserHandler(config, logger))
-				testGroup.GET("bob", testHandler(config, logger, getRestDbClient))
-				testGroup.GET("bill", testHandler(config, logger, getPgClient))
+				testGroup.GET("bob", testHandler(config, logger, getPgClient))
 			}
 		}
 	}

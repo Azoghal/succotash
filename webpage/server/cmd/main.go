@@ -52,11 +52,9 @@ func run(
 		ApiUrl: apiUrl,
 	}
 
-	restDbGetter := supabase.NewRestDBClientFactory(config.ApiUrl, config.ApiKey)
-
 	pgDbGetter := supabase.NewPGClientFactory(dbUrl)
 
-	server := server.NewServer(config, logger, restDbGetter, pgDbGetter)
+	server := server.NewServer(config, logger, pgDbGetter)
 
 	addr := ":6789" // Define the server address
 	srv := &http.Server{

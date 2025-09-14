@@ -2,14 +2,11 @@ package supabase
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
-	"github.com/supabase-community/supabase-go"
 )
 
 // TODO this is assuming that we're going to use the rest api to interact with the db
@@ -21,51 +18,7 @@ type Client interface {
 	CheckSession(string) (bool, error)
 }
 
-type postgrestClient struct {
-	supabaseClient *supabase.Client
-}
-
-func (c *postgrestClient) NoOp() {
-}
-
-func (c *postgrestClient) GetTestEvents() ([]TestEvent, error) {
-	data, _, err := c.supabaseClient.From("test_events").Select("*", "", false).Execute()
-	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to select testEvents"))
-	}
-
-	resp := string(data)
-	fmt.Printf("The data: %s\n", resp)
-
-	var events []TestEvent
-	err = json.Unmarshal(data, &events)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to unmarshall json"))
-	}
-
-	return events, nil
-}
-
-func (c *postgrestClient) CheckSession(_ string) (bool, error) {
-	return false, errors.New("unimplemented")
-}
-
 type DBClientFactory func() Client
-
-func NewRestDBClientFactory(url, key string) DBClientFactory {
-	return func() Client {
-
-		fmt.Printf("%s: %s\n", url, key)
-
-		c, err := supabase.NewClient(url, key, &supabase.ClientOptions{})
-		if err != nil {
-			fmt.Println("cannot initalize client", err)
-		}
-		return &postgrestClient{
-			supabaseClient: c,
-		}
-	}
-}
 
 type pgClient struct {
 	url string
