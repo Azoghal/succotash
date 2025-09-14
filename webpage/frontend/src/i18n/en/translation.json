@@ -1,12 +1,19 @@
 {
-    "counter.label": "Press Me!",
-    "counter_zero": "I'm so empty",
-    "counter_one": "I'm just right",
-    "counter_other": "I'm so full",
     "button.label": "O",
     "button.quickAction": "Quick Action",
+    "error.session": "Error getting login service",
+    "login": "Login",
+    "logout": "Logout",
+    "logout.success": "You have successfully logged out.",
+    "logout.success.action": "Return to the home page to continue using tools that do not require login.",
+    "logout.home.link": "Home",
+    "protected.page": "You must log in to access this content.",
+    "sessionHealth.error": "Err",
+    "sessionHealth.ok": "OK",
     "tool.card.desc": "This is a quick summary of what the tool will do, possibly accompanied by some relevant current status",
     "tool.card.title": "Tool {{count}}",
-    "title.succotash": "Legendary. Succotash",
-    "login": "login"
+    "tool.card.authed": "Tool Requiring Auth",
+    "tool.card.unauthed": "Tool Requiring not Auth",
+    "tool.card.example.state": "State: {{value}}",
+    "title.succotash": "Legendary. Succotash"
 }

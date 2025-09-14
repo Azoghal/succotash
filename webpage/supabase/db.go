@@ -1,11 +1,12 @@
 package supabase
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
-	"fmt"
+	"time"
 
-	"github.com/supabase-community/supabase-go"
+	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 )
 
 // TODO this is assuming that we're going to use the rest api to interact with the db
@@ -14,47 +15,81 @@ import (
 type Client interface {
 	NoOp()
 	GetTestEvents() ([]TestEvent, error)
+	CheckSession(string) (bool, error)
 }
 
-type client struct {
-	supabaseClient *supabase.Client
+type DBClientFactory func() Client
+
+type pgClient struct {
+	url string
 }
 
-func (c *client) NoOp() {
-}
-
-func (c *client) GetTestEvents() ([]TestEvent, error) {
-	data, _, err := c.supabaseClient.From("test_events").Select("*", "", false).Execute()
-	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to select testEvents"))
+func NewPGClientFactory(dbUrl string) DBClientFactory {
+	return func() Client {
+		return &pgClient{url: dbUrl}
 	}
+}
 
-	resp := string(data)
-	fmt.Printf("The data: %s\n", resp)
+var _ Client = (*pgClient)(nil)
 
+func (c *pgClient) NoOp() {}
+
+func (c *pgClient) GetTestEvents() ([]TestEvent, error) {
+	conn, err := pgx.Connect(context.Background(), c.url)
+	if err != nil {
+		log.Err(err).Msgf("Failed to connect to the database: %v", err)
+		return nil, err
+	}
+	defer conn.Close(context.Background())
+
+	// Example query to test connection
 	var events []TestEvent
-	err = json.Unmarshal(data, &events)
+	rows, err := conn.Query(context.Background(), "SELECT * from test_events")
 	if err != nil {
-		return nil, errors.Join(err, errors.New("failed to unmarshall json"))
+		log.Err(err).Msgf("Query failed: %v", err)
+		return nil, err
 	}
+
+	for rows.Next() {
+		var id int
+		var content string
+		var createdAt time.Time
+		err := rows.Scan(&id, &createdAt, &content)
+		if err != nil {
+			log.Err(err).Msgf("Query failed: %v", err)
+
+			return nil, err
+		}
+		events = append(events, TestEvent{Id: id, Content: content})
+	}
+	if err = rows.Err(); err != nil {
+		log.Err(err).Msgf("Query failed: %v", err)
+		return nil, err
+	}
+
+	log.Info().Msgf("got events: %v", events)
 
 	return events, nil
 }
 
-type RestDBClientFactory func(url, key string) Client
+func (c *pgClient) CheckSession(sessionId string) (bool, error) {
+	conn, err := pgx.Connect(context.Background(), c.url)
+	if err != nil {
+		log.Err(err).Msgf("Failed to connect to the database: %v", err)
+		return false, err
+	}
+	defer conn.Close(context.Background())
 
-func NewRestDBClientFactory() RestDBClientFactory {
-	return func(url, key string) Client {
-
-		fmt.Printf("%s: %s\n", url, key)
-
-		c, err := supabase.NewClient(url, key, &supabase.ClientOptions{})
-		if err != nil {
-			fmt.Println("cannot initalize client", err)
+	var id, userId string
+	err = conn.QueryRow(context.Background(), "select id, user_id from auth.sessions where id=$1", sessionId).Scan(&id, &userId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Just means not a real session
+			return false, nil
 		}
-		return &client{
-			supabaseClient: c,
-		}
+		log.Err(err).Msgf("error querying user session", err)
+		return false, err
 	}
 
+	return true, nil
 }

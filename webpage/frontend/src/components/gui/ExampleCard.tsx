@@ -1,20 +1,22 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface IExampleCardProps {
     title: string;
+    actionDescription: string;
+    state: string;
+    onActionClick: (input: string)=>void 
 }
 
 export default function ExampleCard(props: IExampleCardProps): JSX.Element {
-    const [popularity, setPopularity] = useState<number>(-1);
-    const [artist, setArtist] = useState("");
+    const {t} = useTranslation();
+    const {onActionClick, state} = props
+    
+    const [exampleInput, setExampleInput] = useState("");
 
-    const getArtistPopularity = useCallback(() => {
-        console.log(
-            `Lets go ask the backend for the popularity of the band: ${artist}`
-        );
-
-        setPopularity(20);
-    }, [artist]);
+    const doAction = useCallback(async () => {
+        onActionClick(exampleInput)
+    },[onActionClick, exampleInput]); 
 
     return (
         <div className="card">
@@ -23,19 +25,19 @@ export default function ExampleCard(props: IExampleCardProps): JSX.Element {
                 <div>
                     <input
                         type="text"
-                        onChange={(e) => setArtist(e.target.value)}
-                        value={artist}
+                        onChange={(e) => setExampleInput(e.target.value)}
+                        value={exampleInput}
                     />
-                    {artist}
+                    {exampleInput}
                 </div>
-                <div>Popularity: {popularity == -1 ? "..." : popularity}</div>
+                <div>{t("tool.card.example.state", {value: state != "" ? state : "..."})}</div>
             </div>
             <div className="card__quick-action">
                 <button
                     className="c-btn c-btn__alternate"
-                    onClick={getArtistPopularity}
+                    onClick={doAction}
                 >
-                    Get Artist Popularity
+                    {props.actionDescription}
                 </button>
             </div>
         </div>

@@ -6,10 +6,12 @@ tasks:
       - echo "{{.GREETING}}"
     silent: true
 
+  # We can make this copy the relevant .env or .env.local across
   build:
     cmds:
       - mkdir -p build
-      - go build -o build/server server/cmd/main.go 
+      - go build -o build/server server/cmd/main.go
+      - cp .env build/.env
       - task: build-webpage
   
   build-webpage:

@@ -22,6 +22,7 @@ import (
 const (
 	supabaseKeyEnvVar    = "SUPABASE_API_KEY"
 	supabaseApiUrlEnvVar = "SUPABASE_API_URL"
+	dbUrlEnvVar          = "DATABASE_URL"
 )
 
 func run(
@@ -34,24 +35,26 @@ func run(
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 
 	// Initialize zerolog logger
 	logger := zerolog.New(stderr).With().Timestamp().Logger()
 
 	apiKey := getenv(supabaseKeyEnvVar)
 	apiUrl := getenv(supabaseApiUrlEnvVar)
+	dbUrl := getenv(dbUrlEnvVar)
 
 	config := server.ServerConfig{
 		ApiKey: apiKey,
 		ApiUrl: apiUrl,
 	}
 
-	restDbGetter := func() supabase.RestDBClientFactory {
-		return supabase.NewRestDBClientFactory()
-	}
+	pgDbGetter := supabase.NewPGClientFactory(dbUrl)
 
-	server := server.NewServer(config, logger, restDbGetter())
+	server := server.NewServer(config, logger, pgDbGetter)
 
 	addr := ":6789" // Define the server address
 	srv := &http.Server{
@@ -69,7 +72,7 @@ func run(
 		logger.Info().Msgf("Starting server on %s", addr)
 		return utils.RunServer(egCtx, srv)
 	})
-	err := eg.Wait()
+	err = eg.Wait()
 	if err != nil {
 		log.Err(err).Msg("Error during operation")
 	}
@@ -81,8 +84,16 @@ func run(
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Args, os.Getenv, os.Stdin, os.Stdout, os.Stderr); err != nil {
+	if err := run(ctx, os.Args, panickingGetErr, os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
+}
+
+func panickingGetErr(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		panic(fmt.Sprintf("env %s not found", key))
+	}
+	return val
 }
