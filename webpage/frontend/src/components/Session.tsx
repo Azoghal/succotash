@@ -17,14 +17,17 @@ import { supabaseClient } from "../main";
 import LogoutPage from "./Logout";
 
 const SESSION_COOKIE_NAME = "supasession";
+const SPOTIFY_COOKIE_NAME = "succotashspotify";
+
 
 export default function Session(): React.JSX.Element {
     const [supabaseSession, setSupabaseSession] = useState<SupabaseSession>();
     const [supabaseGetSessionError,setSupabaseGetSessionError ] = useState<boolean>(false);
     const [mostRecentAuthEventState, setMostRecentAuthEventState] = useState<AuthChangeEvent| "NONE">("NONE")
 
-    const setSessionAndCookie = useCallback((session: SupabaseSession)=>{
+    const setSessionAndCookies = useCallback((session: SupabaseSession)=>{
         document.cookie = `${SESSION_COOKIE_NAME}=${session.access_token}; path=/; SameSite=Lax; expires=session`;
+        document.cookie = `${SPOTIFY_COOKIE_NAME}=${session.provider_token}; path=/; SameSite=Lax; expires=session`;
         setSupabaseSession(session)
         console.log("spotify token: ", session.provider_token);
     }, [setSupabaseSession])
@@ -37,7 +40,7 @@ export default function Session(): React.JSX.Element {
                     setSupabaseGetSessionError(true);
                 }
                 if (session != null){
-                    setSessionAndCookie(session);
+                    setSessionAndCookies(session);
                     setSupabaseGetSessionError(false);
                 }
             })      
@@ -47,12 +50,12 @@ export default function Session(): React.JSX.Element {
         } = supabaseClient.auth.onAuthStateChange((event, session) => {
             setMostRecentAuthEventState(event);
             if (session != null){
-                setSessionAndCookie(session);
+                setSessionAndCookies(session);
             }
         }) 
 
         return () => subscription.unsubscribe()    
-    }, [setSessionAndCookie])
+    }, [setSessionAndCookies])
 
     const session: ISession = useMemo(()=>{
         const userSession: ISession = {

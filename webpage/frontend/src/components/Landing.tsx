@@ -29,6 +29,23 @@ export default function Landing(props: ILandingProps): React.JSX.Element {
         });
     }, [apiBaseUrl, setBobState])
 
+    const [spotifyState, setSpotifyState] = useState<string>("");
+    const authedSpotify = useCallback((input:string) => {
+        console.log("ignoring input: ", input)
+        const extra: RequestInit = {credentials: "include"}
+        fetch(`${apiBaseUrl}/authed/spotify/test`, extra)
+        .then(async (resp: Response)=>{
+            if (!resp.ok) {
+                throw new Error(`HTTP error! status: ${resp.status}`);
+            }
+            const response = await resp.json()
+            setSpotifyState(JSON.stringify(response));
+        }).catch((e)=>{
+            console.log("error making api request: ", e)
+            setSpotifyState("failed req");
+        });
+    }, [apiBaseUrl, setSpotifyState])
+
     const [testState, setTestState] = useState<string>("");
     const unauthedReq = (input:string) => {
         console.log("ignoring input: ", input)
@@ -88,6 +105,14 @@ export default function Landing(props: ILandingProps): React.JSX.Element {
                             actionDescription="Do unauth test"
                             state={testState}
                             onActionClick={unauthedReq}
+                        />
+                    </div>
+                    <div className="column is-3" key={2}>
+                        <ExampleCard
+                            title={t("tool.card.authed.spotify")}
+                            actionDescription="Get current playing"
+                            state={spotifyState}
+                            onActionClick={authedSpotify}
                         />
                     </div>
                 </div>

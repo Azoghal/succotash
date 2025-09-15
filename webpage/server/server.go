@@ -5,28 +5,48 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"server/spapi"
 	"server/supabase"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/lestrrat-go/jwx/v3/jwt"
 	"github.com/rs/zerolog"
+	spotifyauth "github.com/zmb3/spotify/v2/auth"
 
 	"github.com/azoghal/succotash/webpage/log"
 )
 
-const actorDisplayNameKey = "actor-display-id"
+const (
+	actorDisplayNameKey = "actor-display-id"
+	spotifyTokenKey     = "spotify-token-key"
+)
 
-type ServerConfig struct {
-	ApiKey string
-	ApiUrl string
+// TODO move elsewhere
+// keys for attaching stuff to context.Context
+type actorDisplayName struct{}
+type spotifyTokenKeyStruct struct{}
+
+func GetSpotifyTokenFromCtx(ctx context.Context) (string, error) {
+	val, ok := ctx.Value(spotifyTokenKeyStruct{}).(string)
+	if !ok {
+		return "", errors.New("no spotify token")
+	}
+
+	return val, nil
 }
 
-func NewServer(config ServerConfig, logger zerolog.Logger, getPgDbClient supabase.DBClientFactory) *gin.Engine {
+type ServerConfig struct {
+	WebUrl  string
+	Ipv4Url string
+	DbUrl   string
+}
+
+func NewServer(config ServerConfig, logger zerolog.Logger, getPgDbClient supabase.DBClientFactory, spapiClient spapi.SpotifyApiClientFactory, spotifyAuth *spotifyauth.Authenticator) *gin.Engine {
 	router := gin.New()                       // Create a new Gin router without default middleware
 	router.Use(gin.Recovery())                // Add default recovery middleware
 	router.Use(log.ZerologMiddleware(logger)) // Add custom zerolog logging middleware
-	addRoutes(router, config, logger, getPgDbClient)
+	addRoutes(router, config, logger, getPgDbClient, spapiClient, spotifyAuth)
 	return router
 }
 
@@ -35,6 +55,8 @@ func addRoutes(
 	config ServerConfig,
 	logger zerolog.Logger,
 	getPgClient supabase.DBClientFactory,
+	spapiClient spapi.SpotifyApiClientFactory,
+	spotifyAuth *spotifyauth.Authenticator,
 ) {
 	// redirect anything at / to the landing page
 	router.GET("/", func(c *gin.Context) { c.Redirect(http.StatusTemporaryRedirect, "/p/landing") })
@@ -46,6 +68,39 @@ func addRoutes(
 	webpages.GET("/*filepath", func(c *gin.Context) {
 		c.File("./webpage/dist/index.html")
 	})
+
+	// Spotify auth endpoints
+	spotifyLinking := router.Group("/spotify")
+	{
+
+		// TODO
+		tempState := "temporarystatenotreallygood"
+
+		// redirect to the login
+		spotifyLinking.GET("/link", func(c *gin.Context) {
+			spotifyLoginUrl := spotifyAuth.AuthURL(tempState)
+			c.Redirect(http.StatusTemporaryRedirect, spotifyLoginUrl)
+		})
+
+		spotifyLinking.GET("/callback", func(c *gin.Context) {
+			token, err := spotifyAuth.Token(c.Request.Context(), tempState, c.Request)
+			if err != nil {
+				logger.Err(err).Msg("failed to get token")
+				c.AbortWithError(http.StatusForbidden, errors.New("failed to get token"))
+				return
+			}
+			if reqState := c.Request.FormValue("state"); reqState != tempState {
+				logger.Err(err).Str("expected", tempState).Str("received", reqState).Msg("state does not match")
+				c.AbortWithError(http.StatusNotFound, errors.New("failed to get token"))
+				return
+			}
+
+			logger.Info().Str("tok", token.AccessToken).Msg("user's token!!")
+
+			c.Redirect(http.StatusTemporaryRedirect, "/p/landing")
+
+		})
+	}
 
 	// RPC endpoints
 	// rpcs := router.Group("/r", func(c *gin.Context) { c.AbortWithStatus(http.StatusNotImplemented) })
@@ -64,6 +119,10 @@ func addRoutes(
 			{
 				testGroup.GET("alice", helloUserHandler(config, logger))
 				testGroup.GET("bob", testHandler(config, logger, getPgClient))
+			}
+			spotifyGroup := authedRestApi.Group("/spotify", spotifyMiddleware(logger))
+			{
+				spotifyGroup.GET("test", spotifyHandler(config, logger, spapiClient))
 			}
 		}
 	}
@@ -110,6 +169,29 @@ func testHandler(config ServerConfig, logger zerolog.Logger, dbClientGetter supa
 		for _, v := range events {
 			logger.Info().Str("content", v.Content).Msg("an event")
 		}
+	}
+}
+
+func spotifyHandler(config ServerConfig, logger zerolog.Logger, spapiFactory spapi.SpotifyApiClientFactory) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		ctx = context.WithValue(ctx, spotifyTokenKeyStruct{}, c.Value(spotifyTokenKey))
+
+		spapiClient, err := spapiFactory(ctx)
+		if err != nil {
+			logger.Err(err).Msg("Failed to get spapi client")
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		currentSongName, err := spapiClient.GetCurrentPlayingName(ctx)
+		if err != nil {
+			logger.Err(err).Msg("failed to get current playing name")
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"current_song": currentSongName})
 	}
 }
 
@@ -212,6 +294,21 @@ func authMiddleware(logger zerolog.Logger, dbClientGetter supabase.DBClientFacto
 		// can set some key on the context if we fancied
 		c.Set(actorDisplayNameKey, userName)
 		logger.Info().Bool("session exists", ok).Msg("woohooo 2")
+	}
+}
+
+// Gets the user's spotify token outta the cookie
+func spotifyMiddleware(logger zerolog.Logger) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		cookie, err := c.Request.Cookie("succotashspotify")
+		if err != nil {
+			logger.Err(err).Msg("failed to get spotify cookie")
+			return
+		}
+		tokenString := cookie.Value
+		logger.Info().Str("succotashspotify token", tokenString).Send()
+
+		c.Set(spotifyTokenKey, tokenString)
 	}
 }
 
